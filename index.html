@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>عون دشنا - إدارة الكامبات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, doc, addDoc, getDocs, getDoc, updateDoc, deleteDoc, query, orderBy, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyCJSic148hOAw3vTxJbVG6e4mKkJRxTjmQ",
+    authDomain: "aoun-7c5c5.firebaseapp.com",
+    projectId: "aoun-7c5c5",
+    storageBucket: "aoun-7c5c5.firebasestorage.app",
+    messagingSenderId: "880538477242",
+    appId: "1:880538477242:web:b41c4624d0aea656549883"
+  };
+  const app = initializeApp(firebaseConfig);
+  window._firebase = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassword, signOut, onAuthStateChanged, collection, doc, addDoc, getDocs, getDoc, updateDoc, deleteDoc, query, orderBy, where, onSnapshot };
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--green:#1a6b45;--green2:#228f5c;--green3:#e8f5ee;--gold:#c9973a;--gold2:#f0c96a;--dark:#0f1f17;--gray:#6b7c72;--light:#f4f8f5;--white:#fff;--red:#e53935;--red2:#fdecea;--blue:#1976d2;--blue2:#e3f2fd;--purple:#7b1fa2;--border:#d4e6da}
+body{font-family:'Cairo',sans-serif;background:var(--light);color:var(--dark);min-height:100vh}
+#loading{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+#loading .logo{font-size:52px}
+#loading h2{color:white;font-size:24px;font-weight:900}
+#loading p{color:#8aaa96;font-size:13px}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:var(--green2);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loginPage{min-height:100vh;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#1a2e22;border-radius:24px;padding:40px 32px;width:100%;max-width:380px;border:1px solid #2a4a35;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo .icon{width:72px;height:72px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:20px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px}
+.login-logo h1{color:white;font-size:26px;font-weight:900}
+.login-logo p{color:#8aaa96;font-size:13px;margin-top:4px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:#8aaa96;margin-bottom:6px}
+.form-group input{width:100%;background:#0f1f17;border:1px solid #2a4a35;border-radius:12px;padding:12px 16px;font-family:'Cairo',sans-serif;font-size:14px;color:white;outline:none}
+.form-group input:focus{border-color:var(--green2)}
+.form-group input::placeholder{color:#4a6a55}
+.btn-login{width:100%;background:linear-gradient(135deg,var(--green),var(--green2));border:none;border-radius:14px;padding:14px;color:white;font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
+.login-error{background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.3);color:#ef9a9a;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;display:none}
+#app{display:none}
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--dark);position:fixed;top:0;right:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.sidebar-logo .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.sidebar-logo .logo-text{color:white;font-size:16px;font-weight:900}
+.sidebar-logo .logo-sub{color:#8aaa96;font-size:10px;margin-top:1px}
+.sidebar-camp{padding:12px 20px;background:rgba(26,107,69,0.2);border-bottom:1px solid rgba(255,255,255,0.06)}
+.sidebar-camp .sc-label{font-size:10px;color:#8aaa96;margin-bottom:2px}
+.sidebar-camp .sc-name{font-size:13px;font-weight:700;color:white}
+.sidebar-camp .sc-badge{display:inline-block;background:rgba(74,222,128,0.15);color:#4ade80;font-size:10px;border-radius:4px;padding:1px 8px;margin-top:3px}
+.sidebar-nav{flex:1;padding:10px 12px;overflow-y:auto}
+.nav-link{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;cursor:pointer;border:none;background:none;font-family:'Cairo',sans-serif;font-size:13px;color:#8aaa96;width:100%;text-align:right;transition:all 0.2s;margin-bottom:2px}
+.nav-link:hover{background:rgba(255,255,255,0.05);color:white}
+.nav-link.active{background:rgba(26,107,69,0.3);color:#4ade80}
+.nav-link .nl-icon{font-size:17px;flex-shrink:0}
+.nav-link .nl-text{font-weight:600}
+.sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.08)}
+.btn-logout{background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);border-radius:8px;padding:8px 14px;font-family:'Cairo',sans-serif;font-size:12px;color:#ef9a9a;cursor:pointer;width:100%}
+.main-content{margin-right:240px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+#offlineBanner{display:none;background:var(--red);color:white;text-align:center;padding:8px;font-size:13px;font-weight:700}
+.topbar{background:white;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.topbar-title{font-size:20px;font-weight:900;color:var(--dark)}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.page-content{padding:24px;flex:1}
+.page{display:none}
+.page.active{display:block}
+.bottom-nav{display:none}
+.camp-hero{background:linear-gradient(135deg,var(--green),var(--green2));border-radius:20px;padding:20px;color:white;margin-bottom:16px;position:relative;overflow:hidden}
+.camp-hero::before{content:'🏕';position:absolute;left:-16px;top:-16px;font-size:90px;opacity:0.08}
+.camp-hero .camp-num{font-size:12px;opacity:0.8;margin-bottom:2px}
+.camp-hero h2{font-size:22px;font-weight:900}
+.camp-hero .camp-status{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:8px;padding:4px 12px;font-size:12px;margin-top:8px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:white;border-radius:14px;padding:14px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.stat-card .s-label{font-size:11px;color:var(--gray);margin-bottom:4px}
+.stat-card .s-value{font-size:20px;font-weight:900}
+.stat-card .s-unit{font-size:11px;color:var(--gray);margin-top:2px}
+.stat-card.green .s-value{color:var(--green)}
+.stat-card.gold .s-value{color:var(--gold)}
+.stat-card.red .s-value{color:var(--red)}
+.stat-card.blue .s-value{color:var(--blue)}
+.net-balance-card{background:linear-gradient(135deg,var(--dark),#1a3a28);border-radius:18px;padding:20px;margin-bottom:16px;color:white;display:flex;justify-content:space-between;align-items:center}
+.net-balance-card .nb-label{font-size:12px;opacity:0.7;margin-bottom:4px}
+.net-balance-card .nb-value{font-size:28px;font-weight:900;color:#4ade80}
+.net-balance-card .nb-sub{font-size:11px;opacity:0.6;margin-top:3px}
+.net-balance-card .nb-icon{font-size:40px;opacity:0.3}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-title{font-size:12px;font-weight:700;color:var(--gray);letter-spacing:0.5px}
+.btn-add{background:var(--green);color:white;border:none;border-radius:10px;padding:8px 16px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btn-add:hover{background:var(--green2)}
+.btn-edit{background:var(--blue2);color:var(--blue);border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif}
+.btn-delete{background:var(--red2);color:var(--red);border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif}
+.btn-save{width:100%;background:linear-gradient(135deg,var(--green),var(--green2));border:none;border-radius:14px;padding:14px;color:white;font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;box-shadow:0 6px 20px rgba(26,107,69,0.3)}
+.btn-cancel{width:100%;background:var(--light);border:1px solid var(--border);border-radius:14px;padding:12px;color:var(--gray);font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer;margin-top:8px}
+.btn-outline{background:var(--green3);border:2px solid var(--green);color:var(--green);border-radius:12px;padding:10px 16px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}
+.btn-archive-camp{background:var(--red2);border:1px solid rgba(229,57,53,0.3);color:var(--red);border-radius:12px;padding:11px 16px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.list-item{background:white;border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.03);transition:box-shadow 0.2s,transform 0.1s}
+.list-item:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08);transform:translateY(-1px)}
+.list-item .item-main{font-size:14px;font-weight:700}
+.list-item .item-sub{font-size:11px;color:var(--gray);margin-top:2px}
+.list-item .item-amount{font-size:15px;font-weight:900;color:var(--green)}
+.list-item .item-actions{display:flex;gap:6px;align-items:center}
+.list-item.dragging{opacity:0.5;border:2px dashed var(--green);background:var(--green3)}
+.list-item.drag-over{border-top:3px solid var(--green)}
+.drag-handle{cursor:grab;color:var(--gray);font-size:16px;padding:0 6px;user-select:none}
+.drag-handle:active{cursor:grabbing}
+.team-pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700}
+.pill-zad{background:rgba(25,118,210,0.1);color:var(--blue)}
+.pill-sanabel{background:rgba(26,107,69,0.1);color:var(--green)}
+.pill-taheel{background:rgba(201,151,58,0.1);color:var(--gold)}
+.pill-waha{background:rgba(123,31,162,0.1);color:var(--purple)}
+.note-tag{display:inline-block;background:rgba(201,151,58,0.1);color:var(--gold);font-size:10px;border-radius:6px;padding:2px 8px;margin-top:3px}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,31,23,0.7);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:white;border-radius:20px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:fadeIn 0.2s ease}
+.modal-lg{max-width:720px}
+@keyframes fadeIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{font-size:18px;font-weight:900;margin-bottom:20px}
+.modal-tabs{display:flex;gap:4px;background:var(--light);border-radius:12px;padding:4px;margin-bottom:20px}
+.modal-tab{flex:1;padding:8px;text-align:center;border:none;background:none;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;color:var(--gray);border-radius:10px;cursor:pointer;transition:all 0.2s}
+.modal-tab.active{background:white;color:var(--green);box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.input-group{margin-bottom:14px}
+.input-group label{display:block;font-size:12px;color:var(--gray);margin-bottom:5px;font-weight:600}
+.input-group input,.input-group select,.input-group textarea{width:100%;background:var(--light);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-family:'Cairo',sans-serif;font-size:14px;color:var(--dark);outline:none;transition:border-color 0.2s}
+.input-group input:focus,.input-group select:focus,.input-group textarea:focus{border-color:var(--green)}
+.input-group textarea{resize:vertical;min-height:70px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.team-selector{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.team-btn{background:var(--light);border:2px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer;transition:all 0.2s;font-family:'Cairo',sans-serif}
+.team-btn:hover{border-color:var(--green)}
+.team-btn.active{border-color:var(--green);background:var(--green3)}
+.team-btn .tb-icon{font-size:18px;margin-bottom:3px}
+.team-btn .tb-name{font-size:12px;font-weight:700;color:var(--dark)}
+.five-pct-card{background:linear-gradient(135deg,rgba(201,151,58,0.15),rgba(240,201,106,0.08));border:1px solid rgba(201,151,58,0.3);border-radius:18px;padding:20px;margin-bottom:16px}
+.five-pct-card .fp-label{font-size:12px;color:var(--gold);font-weight:700;margin-bottom:4px}
+.five-pct-card .fp-value{font-size:32px;font-weight:900;color:var(--gold)}
+.five-pct-card .fp-sub{font-size:12px;color:var(--gray);margin-top:4px}
+.progress-wrap{margin-bottom:12px}
+.progress-wrap .pw-header{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+.progress-wrap .pw-name{font-weight:700}
+.progress-wrap .pw-amount{color:var(--gray)}
+.pb-track{background:var(--light);border-radius:6px;height:10px;overflow:hidden;border:1px solid var(--border)}
+.pb-fill{height:100%;border-radius:6px;transition:width 0.8s ease}
+.pb-green{background:linear-gradient(90deg,var(--green),var(--green2))}
+.pb-gold{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.pb-blue{background:linear-gradient(90deg,var(--blue),#42a5f5)}
+.pb-purple{background:linear-gradient(90deg,var(--purple),#ba68c8)}
+.desktop-two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.archive-card{background:white;border-radius:16px;padding:16px;margin-bottom:10px;border:1px solid var(--border);cursor:pointer;transition:box-shadow 0.2s}
+.archive-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+.ac-name{font-size:16px;font-weight:900}
+.ac-date{font-size:11px;color:var(--gray);margin-top:3px}
+.ac-badge{display:inline-block;background:var(--green3);color:var(--green);font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px;margin-top:6px}
+.ac-amount{font-size:18px;font-weight:900;color:var(--green)}
+.ac-cases{font-size:11px;color:var(--gray);margin-top:2px}
+.log-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.log-dot.add{background:var(--green)}
+.log-dot.edit{background:var(--blue)}
+.log-dot.delete{background:var(--red)}
+.log-dot.archive{background:var(--gold)}
+.log-text{font-size:13px;line-height:1.5}
+.log-time{font-size:11px;color:var(--gray);margin-top:2px}
+.ceiling-row-card{background:var(--light);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border)}
+.ceiling-row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ceiling-row-num{font-size:12px;font-weight:700;color:var(--green)}
+/* CEILINGS PAGE TABLE */
+.ceil-table-wrap{background:white;border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+.ceil-table{width:100%;border-collapse:collapse;font-size:13px}
+.ceil-table th{background:#e8f5ee;padding:10px 12px;text-align:right;font-weight:700;font-size:12px;color:var(--dark);border-bottom:2px solid var(--border);white-space:nowrap}
+.ceil-table td{padding:9px 12px;border-bottom:1px solid #f0f4f2;vertical-align:middle}
+.ceil-table tr:last-child td{border-bottom:none}
+.ceil-table tr.case-header-row{background:#e8f5ee;border-top:3px solid var(--green)}
+.ceil-table tr.case-header-row td{font-weight:900;font-size:13px;color:var(--green);padding:10px 14px;border-bottom:1px solid #c8e6c9}
+.ceil-table tr.ceil-data-row:hover{background:#fafcfb}
+.ceil-table td.ceil-num{color:var(--gray);font-size:12px;width:36px;text-align:center;font-weight:700;background:#f9fbfa}
+.ceil-table td.ceil-name{font-weight:700}
+.ceil-table td.ceil-phone{color:var(--gray);font-size:12px}
+.ceil-table td.ceil-size,.ceil-table td.ceil-beams,.ceil-table td.ceil-paper{font-size:13px;text-align:right;direction:rtl;unicode-bidi:plaintext}
+.ceil-table td.ceil-note{color:var(--gold);font-size:12px}
+.ceil-table td.ceil-empty{color:#bbb;font-size:12px}
+
+/* ===== RESPONSIVE DESIGN ===== */
+.mobile-menu-btn{display:none;position:fixed;top:14px;right:16px;z-index:200;width:42px;height:42px;background:var(--dark);color:white;border:none;border-radius:12px;font-size:20px;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+.sidebar-overlay.show{display:block}
+
+@media(max-width:1024px){
+  .desktop-two-col{grid-template-columns:1fr!important}
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important}
+}
+
+@media(max-width:768px){
+  .mobile-menu-btn{display:flex}
+  .sidebar{transform:translateX(100%);transition:transform 0.3s ease;box-shadow:-8px 0 24px rgba(0,0,0,0.3);overflow-y:auto;height:100vh;-webkit-overflow-scrolling:touch}
+  .sidebar.show{transform:translateX(0)}
+  .main-content{margin-right:0!important}
+  .topbar{padding:14px 64px 14px 16px}
+  .topbar-title{font-size:17px}
+  .page-content{padding:16px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px}
+  .two-col{grid-template-columns:1fr!important}
+  .team-selector{grid-template-columns:1fr!important}
+  .modal{padding:20px;border-radius:16px;max-height:85vh}
+  .modal-lg{max-width:100%}
+  .ceil-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ceil-table{min-width:600px}
+  table{font-size:12px}
+  .list-item{flex-wrap:wrap;gap:8px}
+  .stat-card{padding:12px}
+  .s-value{font-size:18px}
+  .topbar-actions{flex-wrap:wrap;gap:6px}
+  .btn-add{font-size:12px;padding:8px 12px}
+  body{font-size:14px}
+}
+
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr 1fr!important;gap:6px}
+  .login-card{padding:28px 20px;margin:0 16px}
+  .page-content{padding:12px}
+  .topbar{padding:12px 56px 12px 12px}
+  .modal{padding:16px;width:calc(100% - 16px)}
+  .stat-card .s-value{font-size:16px}
+  .two-col{gap:8px}
+}
+
+@media print{
+  .sidebar,.topbar,.btn-print-ceil,#offlineBanner{display:none!important}
+  .main-content{margin-right:0!important}
+  .page-content{padding:0!important}
+  .ceil-table-wrap{border:none;border-radius:0}
+  .ceil-table th{background:#e8f5ee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ceil-table tr.case-header-row{background:#f4f8f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-header{display:block!important}
+}
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--dark);color:white;padding:10px 20px;border-radius:12px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;white-space:nowrap}
+.toast.show{opacity:1}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.info-box{background:var(--green3);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--green);margin-bottom:14px;display:flex;gap:8px;align-items:flex-start}
+.footer-credit{text-align:center;padding:14px 0 4px;font-size:11px;color:var(--gray)}
+.footer-credit span{color:var(--green);font-weight:700}
+.copy-btn{background:var(--green3);color:var(--green);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif}
+</style>
+</head>
+<body>
+<div id="loading"><div class="logo">🤝</div><h2>عون دشنا</h2><p>جاري التحميل...</p><div class="spinner"></div></div>
+
+<div id="loginPage" style="display:none">
+  <div class="login-card">
+    <div class="login-logo"><div class="icon">🤝</div><h1>عون دشنا</h1><p>نظام إدارة الكامبات الخيرية</p></div>
+    <div class="form-group"><label>الإيميل</label><input type="email" id="loginEmail" placeholder="example@email.com" dir="ltr"></div>
+    <div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPass" placeholder="••••••••" dir="ltr"></div>
+    <button class="btn-login" onclick="doLogin()">دخول</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="app-layout">
+    <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileSidebar()">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+    <div class="sidebar" id="sidebarEl">
+      <div class="sidebar-logo"><div class="logo-icon">🤝</div><div><div class="logo-text">عون دشنا</div><div class="logo-sub">نظام إدارة الكامبات</div></div></div>
+      <div class="sidebar-camp"><div class="sc-label">الكامب الحالي</div><div class="sc-name" id="currentCampLabel">جاري التحميل...</div><div class="sc-badge">🟢 نشط</div></div>
+      <div class="sidebar-nav">
+        <button class="nav-link active" onclick="showPage('pageHome')" id="nav-home"><span class="nl-icon">🏠</span><span class="nl-text">الرئيسية</span></button>
+        <button class="nav-link" onclick="showPage('pageCases')" id="nav-cases"><span class="nl-icon">📋</span><span class="nl-text">الحالات</span></button>
+        <button class="nav-link" onclick="showPage('pageExpenses')" id="nav-expenses"><span class="nl-icon">💸</span><span class="nl-text">المصاريف</span></button>
+        <button class="nav-link" onclick="showPage('pageReports')" id="nav-reports"><span class="nl-icon">📊</span><span class="nl-text">التقارير</span></button>
+        <button class="nav-link" onclick="showPage('pageArchive')" id="nav-archive"><span class="nl-icon">🗂️</span><span class="nl-text">الأرشيف</span></button>
+        <button class="nav-link" onclick="showPage('pageActivity')" id="nav-activity"><span class="nl-icon">📝</span><span class="nl-text">سجل التعديلات</span></button>
+        <button class="nav-link" onclick="showPage('pageCeilings')" id="nav-ceilings"><span class="nl-icon">🏗️</span><span class="nl-text">الأسقف</span></button>
+        <button class="nav-link" onclick="showPage('pageUsers')" id="nav-users"><span class="nl-icon">👥</span><span class="nl-text">المستخدمين</span></button>
+      </div>
+      <div class="sidebar-footer">
+        <div style="background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.1);border-radius:10px;padding:10px 12px;margin-bottom:10px;text-align:center">
+          <div style="font-size:10px;color:#4a6a55;margin-bottom:2px">Developed with ❤️ by</div>
+          <div style="font-size:13px;font-weight:900;color:#4ade80">Belal Fahem</div>
+          <div style="font-size:10px;color:#4a6a55;margin-top:2px">عون دشنا v2.0</div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">🚪 تسجيل الخروج</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div id="offlineBanner">⚠️ أنت offline - البيانات مش هتتحفظ لحد ما الإنترنت يرجع</div>
+      <div class="topbar">
+        <div id="pageTopbarTitle"><div class="topbar-title">الرئيسية</div></div>
+        <div class="topbar-actions" id="pageTopbarActions"></div>
+      </div>
+      <div class="page-content">
+
+        <div class="page active" id="pageHome">
+          <div id="homeCampHero"></div>
+          <div class="stats-grid" id="homeStats"></div>
+          <div id="homeNetBalance"></div>
+          <div class="desktop-two-col">
+            <div>
+              <div class="section-header"><div class="section-title">آخر الحالات</div><button class="btn-add" onclick="showPage('pageCases')">عرض الكل</button></div>
+              <div id="homeRecentCases"></div>
+            </div>
+            <div>
+              <div class="section-title" style="margin-bottom:10px">إجراءات سريعة</div>
+              <button class="btn-add" style="width:100%;padding:12px;font-size:13px;border-radius:12px;margin-bottom:8px;justify-content:center" onclick="openAddCase()">➕ إضافة حالة جديدة</button>
+              <button class="btn-add" style="width:100%;padding:12px;font-size:13px;border-radius:12px;margin-bottom:8px;justify-content:center;background:var(--blue)" onclick="openAddExpense()">💸 إضافة مصروف</button>
+              <button class="btn-add" style="width:100%;padding:12px;font-size:13px;border-radius:12px;margin-bottom:8px;justify-content:center;background:var(--purple)" onclick="openNewCamp()">🏕️ كامب جديد</button>
+              <button class="btn-archive-camp" onclick="openArchiveCamp()">🗂️ أرشفة الكامب الحالي</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="pageCases">
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+            <input type="text" id="searchCases" placeholder="🔍 بحث بالكود..." oninput="renderCases()" style="flex:1;min-width:140px;padding:9px 14px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;background:white;outline:none">
+            <select id="filterTeam" onchange="renderCases()" style="padding:9px 14px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;background:white;outline:none;cursor:pointer">
+              <option value="">كل التيمات</option>
+              <option value="زاد">🌾 زاد</option>
+              <option value="سنابل">🌿 سنابل</option>
+              <option value="التأهيل">⚙️ التأهيل</option>
+              <option value="الواحة">🏝️ الواحة</option>
+            </select>
+          </div>
+          <div id="casesList"></div>
+        </div>
+
+        <div class="page" id="pageExpenses"><div id="expensesList"></div></div>
+
+        <div class="page" id="pageReports"><div id="reportsContent"></div></div>
+
+        <div class="page" id="pageArchive">
+          <div class="info-box" style="margin-bottom:16px">ℹ️ هنا الكامبات المنتهية. اضغط على أي كامب لعرض تفاصيله.</div>
+          <div id="archiveList"></div>
+        </div>
+
+        <div class="page" id="pageActivity">
+          <div style="background:white;border-radius:16px;padding:20px;border:1px solid var(--border)">
+            <div class="section-title" style="margin-bottom:14px">سجل آخر التعديلات</div>
+            <div id="activityList"><div class="empty-state"><div class="es-icon">📝</div><p>مفيش تعديلات بعد</p></div></div>
+          </div>
+        </div>
+
+        <div class="page" id="pageCeilings">
+          <div id="ceilingsContent"></div>
+        </div>
+
+        <div class="page" id="pageUsers">
+          <div style="background:white;border-radius:16px;padding:20px;border:1px solid var(--border)">
+            <div style="font-size:15px;font-weight:900;margin-bottom:16px">👥 إضافة مستخدم جديد</div>
+            <div style="background:var(--dark);border-radius:10px;padding:14px;font-size:12px;color:#4ade80;font-family:monospace;line-height:1.8;margin-bottom:14px">
+              1. افتح console.firebase.google.com<br>2. اختار Authentication<br>3. اضغط "Add user"<br>4. حط الإيميل والباسورد<br>5. اضغط "Add user"
+            </div>
+            <button class="btn-add" onclick="window.open('https://console.firebase.google.com/project/aoun-7c5c5/authentication/users','_blank')">🔗 فتح Firebase Authentication</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal(event)">
+
+  <div class="modal modal-lg" id="modalCase">
+    <div class="modal-title" id="modalCaseTitle">➕ إضافة حالة جديدة</div>
+    <input type="hidden" id="caseEditId">
+    <div class="two-col">
+      <div class="input-group"><label>كود الحالة</label><input type="text" id="caseCode" placeholder="مثال: F-10"></div>
+      <div class="input-group"><label>تكلفة الحالة (جنيه)</label><input type="number" id="caseCost" placeholder="0"></div>
+    </div>
+    <div class="input-group">
+      <label>التيم المسؤول</label>
+      <div class="team-selector">
+        <div class="team-btn active" onclick="selectTeam('زاد')" id="team-زاد"><div class="tb-icon">🌾</div><div class="tb-name">زاد</div></div>
+        <div class="team-btn" onclick="selectTeam('سنابل')" id="team-سنابل"><div class="tb-icon">🌿</div><div class="tb-name">سنابل</div></div>
+        <div class="team-btn" onclick="selectTeam('التأهيل')" id="team-التأهيل"><div class="tb-icon">⚙️</div><div class="tb-name">التأهيل</div></div>
+        <div class="team-btn" onclick="selectTeam('الواحة')" id="team-الواحة"><div class="tb-icon">🏝️</div><div class="tb-name">الواحة</div></div>
+      </div>
+    </div>
+    <div class="input-group"><label>رقم فودافون كاش</label><input type="tel" id="caseCash" placeholder="01xxxxxxxxx" dir="ltr"></div>
+    <div class="input-group"><label>ملاحظة (اختياري)</label><textarea id="caseNote" placeholder="مثال: الفلوس هتتدي بعيد عن التجميع"></textarea></div>
+    <button class="btn-save" onclick="saveCase()">حفظ الحالة ✓</button>
+    <button class="btn-cancel" onclick="closeAllModals()">إلغاء</button>
+  </div>
+
+  <div class="modal modal-lg" id="modalCaseDetail" style="display:none">
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchCaseTab('info')">📋 التفاصيل</button>
+      <button class="modal-tab" onclick="switchCaseTab('ceilings')">🏗️ الأسقف</button>
+    </div>
+    <div id="caseDetailInfo"></div>
+    <div id="caseDetailCeilings" style="display:none"></div>
+    <button class="btn-cancel" onclick="closeAllModals()">إغلاق</button>
+  </div>
+
+  <div class="modal" id="modalExpense" style="display:none">
+    <div class="modal-title">💸 إضافة مصروف</div>
+    <div class="input-group"><label>البند</label><input type="text" id="expName" placeholder="مثال: مواصلات، طباعة..."></div>
+    <div class="input-group"><label>المبلغ (جنيه)</label><input type="number" id="expAmount" placeholder="0"></div>
+    <div class="input-group"><label>ملاحظة (اختياري)</label><input type="text" id="expNote" placeholder=""></div>
+    <button class="btn-save" onclick="saveExpense()">حفظ المصروف ✓</button>
+    <button class="btn-cancel" onclick="closeAllModals()">إلغاء</button>
+  </div>
+
+  <div class="modal" id="modalNewCamp" style="display:none">
+    <div class="modal-title">🏕️ كامب جديد</div>
+    <div class="info-box">⚠️ الكامب الحالي هيتنقل للأرشيف تلقائياً.</div>
+    <div class="input-group"><label>رقم الكامب الجديد</label><input type="number" id="newCampNum" placeholder="مثال: 13"></div>
+    <div class="input-group"><label>اسم الكامب</label><input type="text" id="newCampName" placeholder="مثال: كامب الأمل"></div>
+    <button class="btn-save" onclick="createNewCamp()">بدء الكامب الجديد 🚀</button>
+    <button class="btn-cancel" onclick="closeAllModals()">إلغاء</button>
+  </div>
+
+  <div class="modal" id="modalArchiveCamp" style="display:none">
+    <div class="modal-title" style="color:var(--red)">🗂️ أرشفة الكامب الحالي</div>
+    <div class="info-box" style="background:var(--red2);border:1px solid rgba(229,57,53,0.2);color:var(--red)">⚠️ مش هتقدر ترجعه للنشط إلا من الأرشيف.</div>
+    <div id="archiveCampSummary"></div>
+    <button class="btn-save" style="background:var(--red);box-shadow:none" onclick="archiveCurrentCamp()">تأكيد الأرشفة 🗂️</button>
+    <button class="btn-cancel" onclick="closeAllModals()">إلغاء</button>
+  </div>
+
+  <div class="modal modal-lg" id="modalArchiveDetail" style="display:none">
+    <div id="archiveDetailContent"></div>
+    <button class="btn-cancel" onclick="closeAllModals()">إغلاق</button>
+  </div>
+
+  <div class="modal" id="modalConfirm" style="display:none">
+    <div class="modal-title" style="color:var(--red)">⚠️ تأكيد الحذف</div>
+    <p id="confirmMsg" style="font-size:14px;color:var(--gray);margin:12px 0 20px;line-height:1.8"></p>
+    <div style="display:flex;gap:10px">
+      <button class="btn-save" style="background:var(--red);box-shadow:none;flex:1" onclick="doConfirm()">تأكيد</button>
+      <button class="btn-cancel" style="flex:1;margin:0" onclick="closeAllModals()">إلغاء</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+await new Promise(r => setTimeout(r, 800));
+const { auth, db, signInWithEmailAndPassword, signOut, onAuthStateChanged, collection, doc, addDoc, getDocs, getDoc, updateDoc, deleteDoc, query, orderBy, where, onSnapshot } = window._firebase;
+
+let currentCamp=null, cases=[], expenses=[], selectedTeam='زاد', confirmCallback=null, chartInstance=null, currentCaseDetail=null;
+
+// AUTH
+window.doLogin = async () => {
+  const email=document.getElementById('loginEmail').value, pass=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginError'); errEl.style.display='none';
+  try { await signInWithEmailAndPassword(auth,email,pass); }
+  catch(e) { errEl.style.display='block'; errEl.textContent='إيميل أو كلمة مرور غلط!'; }
+};
+window.doLogout = async () => { await signOut(auth); };
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') window.doLogin(); });
+
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loading').style.display='none';
+  if (user) {
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('app').style.display='block';
+    await loadCurrentCamp();
+  } else {
+    document.getElementById('loginPage').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
+});
+
+// CAMP
+async function loadCurrentCamp() {
+  const snap = await getDocs(query(collection(db,'camps'), where('status','==','active')));
+  if (snap.empty) { showNoActiveCamp(); return; }
+  currentCamp = {id:snap.docs[0].id,...snap.docs[0].data()};
+  document.getElementById('currentCampLabel').textContent = `كامب ${currentCamp.number} - ${currentCamp.name}`;
+  loadCases(); loadExpenses(); loadArchive(); loadActivity();
+}
+
+function showNoActiveCamp() {
+  document.getElementById('currentCampLabel').textContent='مفيش كامب نشط';
+  document.getElementById('homeCampHero').innerHTML=`<div style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🏕️</div><p style="color:var(--gray);margin-bottom:16px">مفيش كامب نشط دلوقتي</p><button class="btn-add" style="margin:0 auto;padding:12px 24px;font-size:14px" onclick="openNewCamp()">+ ابدأ كامب جديد</button></div>`;
+}
+
+// CASES
+function loadCases() {
+  if (!currentCamp) return;
+  const q = query(collection(db,'camps',currentCamp.id,'cases'));
+  onSnapshot(q, snap => {
+    cases = snap.docs.map(d=>({id:d.id,...d.data()}));
+    cases.sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0));
+    renderCases(); renderHome(); renderReports();
+    // لو صفحة الأسقف مفتوحة تتحدث تلقائي
+    const ceilPage = document.getElementById('pageCeilings');
+    if (ceilPage && ceilPage.classList.contains('active')) renderCeilings();
+  });
+}
+
+function loadExpenses() {
+  if (!currentCamp) return;
+  const q = query(collection(db,'camps',currentCamp.id,'expenses'), orderBy('createdAt','desc'));
+  onSnapshot(q, snap => {
+    expenses = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderExpenses(); renderHome(); renderReports();
+  });
+}
+
+window.renderCases = () => {
+  const el=document.getElementById('casesList');
+  if (!el||!currentCamp) return;
+  const search=(document.getElementById('searchCases')?.value||'').toLowerCase();
+  const ft=document.getElementById('filterTeam')?.value||'';
+  let filtered=cases.filter(c=>(!search||c.code?.toLowerCase().includes(search))&&(!ft||c.team===ft));
+  if (filtered.length===0) { el.innerHTML=`<div class="empty-state"><div class="es-icon">📋</div><p>${cases.length===0?'مفيش حالات بعد، اضغط + إضافة':'مفيش نتايج'}</p></div>`; return; }
+  el.innerHTML=filtered.map(c=>caseItemHTML(c,true)).join('');
+  initDragSort();
+};
+
+const toAr = s => String(s).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]).replace(/\*/g, '×');
+function teamPillClass(team) { return team==='زاد'?'pill-zad':team==='سنابل'?'pill-sanabel':team==='الواحة'?'pill-waha':'pill-taheel'; }
+
+function caseItemHTML(c, showActions=false) {
+  const tc=teamPillClass(c.team);
+  return `<div class="list-item" data-id="${c.id}" draggable="${showActions}">
+    ${showActions?`<span class="drag-handle" title="اسحب لترتيب">⣿</span>`:''}
+    <div style="flex:1;cursor:pointer" onclick="openCaseDetail('${c.id}')">
+      <div class="item-main">${c.code}</div>
+      <div style="margin-top:4px"><span class="team-pill ${tc}">${c.team}</span></div>
+      ${c.cashNum?`<div class="item-sub">📱 ${c.cashNum} <button class="copy-btn" onclick="event.stopPropagation();copyText('${c.cashNum}')">نسخ</button></div>`:''}
+      ${c.note?`<div class="note-tag">📝 ${c.note}</div>`:''}
+    </div>
+    <div class="item-actions">
+      <div class="item-amount">${(c.cost||0).toLocaleString('ar-EG')} ج</div>
+      ${showActions?`<button class="btn-edit" onclick="openEditCase('${c.id}')">تعديل</button><button class="btn-delete" onclick="deleteCase('${c.id}')">حذف</button>`:''}
+    </div>
+  </div>`;
+}
+
+// DRAG SORT
+let dragSrc=null;
+function initDragSort() {
+  document.querySelectorAll('#casesList .list-item[draggable="true"]').forEach(item => {
+    item.addEventListener('dragstart', ()=>{ dragSrc=item; item.classList.add('dragging'); });
+    item.addEventListener('dragend', ()=>{ item.classList.remove('dragging'); saveCasesOrder(); });
+    item.addEventListener('dragover', e=>{ e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', ()=>item.classList.remove('drag-over'));
+    item.addEventListener('drop', e=>{
+      e.preventDefault(); item.classList.remove('drag-over');
+      if (dragSrc&&dragSrc!==item) {
+        const parent=item.parentNode, items=[...parent.querySelectorAll('.list-item')];
+        if (items.indexOf(dragSrc)<items.indexOf(item)) parent.insertBefore(dragSrc,item.nextSibling);
+        else parent.insertBefore(dragSrc,item);
+      }
+    });
+  });
+}
+async function saveCasesOrder() {
+  const items=document.querySelectorAll('#casesList .list-item[data-id]');
+  for (let i=0;i<items.length;i++) await updateDoc(doc(db,'camps',currentCamp.id,'cases',items[i].dataset.id),{order:i});
+}
+
+// CASE DETAIL
+window.openCaseDetail = async (id) => {
+  currentCaseDetail=cases.find(c=>c.id===id);
+  if (!currentCaseDetail) return;
+  switchCaseTab('info');
+  showModal('modalCaseDetail');
+};
+
+window.switchCaseTab = (tab) => {
+  document.querySelectorAll('.modal-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='info')||(i===1&&tab==='ceilings')));
+  document.getElementById('caseDetailInfo').style.display=tab==='info'?'block':'none';
+  document.getElementById('caseDetailCeilings').style.display=tab==='ceilings'?'block':'none';
+  if (tab==='info') renderCaseDetailInfo();
+  if (tab==='ceilings') renderCaseDetailCeilings();
+};
+
+function renderCaseDetailInfo() {
+  const c=currentCaseDetail; if(!c) return;
+  document.getElementById('caseDetailInfo').innerHTML=`
+    <div style="margin-bottom:16px"><div style="font-size:22px;font-weight:900;margin-bottom:8px">${c.code}</div><span class="team-pill ${teamPillClass(c.team)}" style="font-size:12px;padding:4px 12px">${c.team}</span></div>
+    <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+      <div class="stat-card green"><div class="s-label">التكلفة</div><div class="s-value">${(c.cost||0).toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div>
+      <div class="stat-card blue"><div class="s-label">فودافون كاش</div><div class="s-value" style="font-size:14px;direction:ltr">${c.cashNum||'-'}</div>${c.cashNum?`<button class="copy-btn" onclick="copyText('${c.cashNum}')">نسخ الرقم</button>`:''}</div>
+    </div>
+    ${c.note?`<div class="note-tag" style="font-size:13px;padding:8px 12px;margin-bottom:16px">📝 ${c.note}</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn-edit" style="flex:1;padding:10px" onclick="closeAllModals();openEditCase('${c.id}')">✏️ تعديل الحالة</button>
+      <button class="btn-delete" style="flex:1;padding:10px" onclick="closeAllModals();deleteCase('${c.id}')">🗑️ حذف الحالة</button>
+    </div>`;
+}
+
+async function renderCaseDetailCeilings() {
+  const c=currentCaseDetail; if(!c) return;
+  const snap=await getDocs(collection(db,'camps',currentCamp.id,'cases',c.id,'ceilings'));
+  const ceilings=snap.docs.map(d=>({id:d.id,...d.data()}));
+  let html=`<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;color:var(--gray)">${ceilings.length} سقف مسجل</div><button class="btn-add" onclick="openAddCeilingToCase('${c.id}')">➕ إضافة سقف</button></div>`;
+  if (ceilings.length===0) { html+=`<div class="empty-state"><div class="es-icon">🏗️</div><p>مفيش أسقف لحد دلوقتي</p></div>`; }
+  else { ceilings.forEach((ceil,i)=>{ html+=`<div class="ceiling-row-card"><div class="ceiling-row-header"><div class="ceiling-row-num">سقف ${i+1}</div><div style="display:flex;gap:6px"><button class="btn-edit" onclick="openEditCeiling('${c.id}','${ceil.id}','${(ceil.size||'').replace(/'/g,"\\'")}','${(ceil.beams||'').replace(/'/g,"\\'")}','${(ceil.paper||'').replace(/'/g,"\\'")}','${(ceil.note||'').replace(/'/g,"\\'")}')">تعديل</button><button class="btn-delete" onclick="deleteCeilingFromCase('${c.id}','${ceil.id}')">حذف</button></div></div><div class="two-col" style="font-size:13px"><div><span style="color:var(--gray)">المقاسات:</span> <strong>${toAr(ceil.size)||'-'}</strong></div><div><span style="color:var(--gray)">العروق:</span> <strong>${toAr(ceil.beams)||'-'}</strong></div><div><span style="color:var(--gray)">الورق:</span> <strong>${toAr(ceil.paper)||'-'}</strong></div>${ceil.note?`<div><span style="color:var(--gray)">ملاحظة:</span> <strong>${ceil.note}</strong></div>`:''}</div></div>`; }); }
+  document.getElementById('caseDetailCeilings').innerHTML=html;
+}
+
+window.openAddCeilingToCase = (caseId) => {
+  closeAllModals();
+  const modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='tempCeilModal';
+  modal.innerHTML=`<div class="modal"><div class="modal-title">🏗️ إضافة سقف</div><div class="two-col"><div class="input-group"><label>المقاسات</label><input type="text" id="tc_size" placeholder="340*380" dir="ltr"></div><div class="input-group"><label>العروق</label><input type="text" id="tc_beams" placeholder="6*360" dir="ltr"></div><div class="input-group"><label>الورق</label><input type="text" id="tc_paper" placeholder="36*420" dir="ltr"></div><div class="input-group"><label>ملاحظات</label><input type="text" id="tc_note" placeholder=""></div></div><button class="btn-save" onclick="saveCeilingToCase('${caseId}')">حفظ ✓</button><button class="btn-cancel" onclick="document.getElementById('tempCeilModal').remove();openCaseDetail('${caseId}')">إلغاء</button></div>`;
+  document.body.appendChild(modal);
+};
+
+window.saveCeilingToCase = async (caseId) => {
+  const data={size:document.getElementById('tc_size').value.trim(),beams:document.getElementById('tc_beams').value.trim(),paper:document.getElementById('tc_paper').value.trim(),note:document.getElementById('tc_note').value.trim(),createdAt:Date.now()};
+  await addDoc(collection(db,'camps',currentCamp.id,'cases',caseId,'ceilings'),data);
+  await logActivity('add','تم إضافة سقف لحالة');
+  document.getElementById('tempCeilModal').remove();
+  currentCaseDetail=cases.find(c=>c.id===caseId);
+  showModal('modalCaseDetail');
+  setTimeout(()=>switchCaseTab('ceilings'),100);
+  showToast('✓ تم حفظ السقف');
+};
+
+window.deleteCeilingFromCase = async (caseId,ceilId) => {
+  await deleteDoc(doc(db,'camps',currentCamp.id,'cases',caseId,'ceilings',ceilId));
+  await logActivity('delete','تم حذف سقف من حالة');
+  renderCaseDetailCeilings(); showToast('✓ تم الحذف');
+};
+
+// EXPENSES
+function renderExpenses() {
+  const el=document.getElementById('expensesList'); if(!el||!currentCamp) return;
+  if (expenses.length===0) { el.innerHTML=`<div class="empty-state"><div class="es-icon">💸</div><p>مفيش مصاريف بعد</p></div>`; return; }
+  el.innerHTML=expenses.map(e=>`<div class="list-item"><div><div class="item-main">${e.name}</div>${e.note?`<div class="item-sub">${e.note}</div>`:''}</div><div class="item-actions"><div class="item-amount">${(e.amount||0).toLocaleString('ar-EG')} ج</div><button class="btn-delete" onclick="deleteExpense('${e.id}')">حذف</button></div></div>`).join('');
+}
+
+// HOME
+function renderHome() {
+  if (!currentCamp) return;
+  const tc=cases.reduce((s,c)=>s+(c.cost||0),0), te=expenses.reduce((s,e)=>s+(e.amount||0),0), fp=Math.round(tc*0.05), net=tc-te-fp;
+  document.getElementById('homeCampHero').innerHTML=`<div class="camp-hero"><div class="camp-num">CAMP #${currentCamp.number}</div><h2>كامب ${currentCamp.number} - ${currentCamp.name}</h2><div class="camp-status">🟢 جارٍ التنفيذ</div></div>`;
+  document.getElementById('homeStats').innerHTML=`<div class="stat-card green"><div class="s-label">إجمالي التجميع</div><div class="s-value">${tc.toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div><div class="stat-card blue"><div class="s-label">عدد الحالات</div><div class="s-value">${cases.length}</div><div class="s-unit">حالة</div></div><div class="stat-card red"><div class="s-label">المصاريف</div><div class="s-value">${te.toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div><div class="stat-card gold"><div class="s-label">نسبة ٥٪</div><div class="s-value">${fp.toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div>`;
+  document.getElementById('homeNetBalance').innerHTML=`<div class="net-balance-card"><div><div class="nb-label">الصافي بعد المصاريف و٥٪</div><div class="nb-value">${net.toLocaleString('ar-EG')} ج</div><div class="nb-sub">التجميع ${tc.toLocaleString('ar-EG')} − مصاريف ${te.toLocaleString('ar-EG')} − ٥٪ ${fp.toLocaleString('ar-EG')}</div></div><div class="nb-icon">💰</div></div>`;
+  const recent=cases.slice(-3).reverse();
+  document.getElementById('homeRecentCases').innerHTML=recent.length===0?`<div class="empty-state"><div class="es-icon">📋</div><p>مفيش حالات لحد دلوقتي</p></div>`:recent.map(c=>caseItemHTML(c)).join('');
+}
+
+// REPORTS
+function renderReports() {
+  if (!currentCamp) return;
+  const tc=cases.reduce((s,c)=>s+(c.cost||0),0), te=expenses.reduce((s,e)=>s+(e.amount||0),0), fp=Math.round(tc*0.05), net=tc-te-fp;
+  const byTeam={'زاد':0,'سنابل':0,'التأهيل':0,'الواحة':0};
+  cases.forEach(c=>{ byTeam[c.team]=(byTeam[c.team]||0)+(c.cost||0); });
+  const max=Math.max(...Object.values(byTeam),1);
+  document.getElementById('reportsContent').innerHTML=`
+    <div class="five-pct-card"><div class="fp-label">نسبة ٥٪ - مصاريف الجمعية</div><div class="fp-value">${fp.toLocaleString('ar-EG')} ج</div><div class="fp-sub">من إجمالي تجميع ${tc.toLocaleString('ar-EG')} ج</div></div>
+    <div class="net-balance-card" style="margin-bottom:16px"><div><div class="nb-label">الصافي النهائي</div><div class="nb-value">${net.toLocaleString('ar-EG')} ج</div><div class="nb-sub">بعد المصاريف والـ٥٪</div></div><div class="nb-icon">💰</div></div>
+    <div class="desktop-two-col">
+      <div>
+        <div class="section-title" style="margin-bottom:12px">توزيع التيمات</div>
+        <div class="progress-wrap"><div class="pw-header"><span class="pw-name">🌾 زاد</span><span class="pw-amount">${byTeam['زاد'].toLocaleString('ar-EG')} ج</span></div><div class="pb-track"><div class="pb-fill pb-blue" style="width:${Math.round(byTeam['زاد']/max*100)}%"></div></div></div>
+        <div class="progress-wrap"><div class="pw-header"><span class="pw-name">🌿 سنابل</span><span class="pw-amount">${byTeam['سنابل'].toLocaleString('ar-EG')} ج</span></div><div class="pb-track"><div class="pb-fill pb-green" style="width:${Math.round(byTeam['سنابل']/max*100)}%"></div></div></div>
+        <div class="progress-wrap"><div class="pw-header"><span class="pw-name">⚙️ التأهيل</span><span class="pw-amount">${byTeam['التأهيل'].toLocaleString('ar-EG')} ج</span></div><div class="pb-track"><div class="pb-fill pb-gold" style="width:${Math.round(byTeam['التأهيل']/max*100)}%"></div></div></div>
+        <div class="progress-wrap"><div class="pw-header"><span class="pw-name">🏝️ الواحة</span><span class="pw-amount">${byTeam['الواحة'].toLocaleString('ar-EG')} ج</span></div><div class="pb-track"><div class="pb-fill pb-purple" style="width:${Math.round(byTeam['الواحة']/max*100)}%"></div></div></div>
+        <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+          <div class="stat-card green"><div class="s-label">إجمالي التجميع</div><div class="s-value">${tc.toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div>
+          <div class="stat-card red"><div class="s-label">المصاريف</div><div class="s-value">${te.toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div>
+          <div class="stat-card blue"><div class="s-label">عدد الحالات</div><div class="s-value">${cases.length}</div></div>
+          <div class="stat-card gold"><div class="s-label">٥٪ للجمعية</div><div class="s-value">${fp.toLocaleString('ar-EG')}</div><div class="s-unit">جنيه</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-bottom:12px">رسم بياني</div>
+        <div style="background:white;border-radius:14px;padding:16px;border:1px solid var(--border)"><canvas id="teamChart" height="220"></canvas></div>
+      </div>
+    </div>
+    <div class="footer-credit">Developed with ❤️ by <span>Belal Fahem</span> · عون دشنا v2.0</div>`;
+  setTimeout(()=>renderChart(byTeam),100);
+}
+
+function renderChart(byTeam) {
+  const ctx=document.getElementById('teamChart'); if(!ctx) return;
+  if (chartInstance) { chartInstance.destroy(); chartInstance=null; }
+  chartInstance=new Chart(ctx,{type:'doughnut',data:{labels:['زاد','سنابل','التأهيل','الواحة'],datasets:[{data:[byTeam['زاد'],byTeam['سنابل'],byTeam['التأهيل'],byTeam['الواحة']],backgroundColor:['#1976d2','#1a6b45','#c9973a','#7b1fa2'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',size:12},padding:12}}}}});
+}
+
+// ARCHIVE
+async function loadArchive() {
+  const snap=await getDocs(query(collection(db,'camps'),where('status','==','archived')));
+  const archived=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+  const el=document.getElementById('archiveList'); if(!el) return;
+  if (archived.length===0) { el.innerHTML=`<div class="empty-state"><div class="es-icon">🗂️</div><p>مفيش كامبات مؤرشفة بعد</p></div>`; return; }
+  el.innerHTML=archived.map(c=>`<div class="archive-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start" onclick="showArchiveDetail('${c.id}')">
+      <div><div class="ac-name">كامب ${c.number} - ${c.name}</div><div class="ac-date">${c.archivedAt?new Date(c.archivedAt).toLocaleDateString('ar-EG'):''}</div><div class="ac-badge">✓ مكتمل</div></div>
+      <div style="text-align:left"><div class="ac-amount">${(c.totalCases||0).toLocaleString('ar-EG')} ج</div><div class="ac-cases">${c.casesCount||0} حالة</div></div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <button class="btn-edit" style="flex:1;padding:8px" onclick="showArchiveDetail('${c.id}')">📂 عرض التفاصيل</button>
+      <button class="btn-delete" style="padding:8px 14px" onclick="deleteArchivedCamp('${c.id}','${c.number}')">🗑️ حذف</button>
+    </div>
+  </div>`).join('');
+}
+
+window.showArchiveDetail = async (campId) => {
+  const campDoc=await getDoc(doc(db,'camps',campId)), camp={id:campDoc.id,...campDoc.data()};
+  const csSnap=await getDocs(collection(db,'camps',campId,'cases')), campCases=csSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const exSnap=await getDocs(collection(db,'camps',campId,'expenses')), campExp=exSnap.docs.map(d=>d.data());
+  const tc=campCases.reduce((s,c)=>s+(c.cost||0),0), te=campExp.reduce((s,e)=>s+(e.amount||0),0), fp=Math.round(tc*0.05), net=tc-te-fp;
+
+  // Load ceilings for each case
+  const casesWithCeilings = [];
+  for (const c of campCases) {
+    const ceilSnap = await getDocs(collection(db,'camps',campId,'cases',c.id,'ceilings'));
+    const ceilings = ceilSnap.docs.map(d=>d.data());
+    if (ceilings.length > 0) casesWithCeilings.push({code:c.code, cashNum:c.cashNum||'', ceilings});
+  }
+
+  // Build ceilings table HTML
+  let ceilingsHTML = '';
+  if (casesWithCeilings.length > 0) {
+    let rowNum = 1;
+    let tableRows = '';
+    casesWithCeilings.forEach(caseData => {
+      tableRows += `<tr style="background:#e8f5ee;border-top:2px solid #c8e6c9"><td colspan="5" style="padding:8px 10px;font-weight:900;font-size:13px;color:var(--green)">📋 ${caseData.code}${caseData.cashNum?` <span style="font-weight:400;color:var(--gray);font-size:11px">📱 ${caseData.cashNum}</span>`:''}</td></tr>`;
+      caseData.ceilings.forEach(ceil => {
+        tableRows += `<tr><td style="font-size:12px;text-align:center">${toAr(ceil.size||'-')}</td><td style="font-size:12px;text-align:center">${toAr(ceil.beams||'-')}</td><td style="font-size:12px;text-align:center">${toAr(ceil.paper||'-')}</td><td style="font-size:12px;color:var(--gold)">${ceil.note||'-'}</td><td style="color:var(--gray);font-size:11px;text-align:center">${rowNum++}</td></tr>`;
+      });
+    });
+    const totalCeils = casesWithCeilings.reduce((s,c)=>s+c.ceilings.length,0);
+    ceilingsHTML = `
+      <div class="section-title" style="margin:16px 0 8px">🏗️ الأسقف (${totalCeils} سقف)</div>
+      <div style="background:white;border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#e8f5ee"><th style="padding:8px 10px;text-align:right;font-size:12px">المقاسات</th><th style="padding:8px 10px;text-align:right;font-size:12px">العروق</th><th style="padding:8px 10px;text-align:right;font-size:12px">الورق</th><th style="padding:8px 10px;text-align:right;font-size:12px">ملاحظات</th><th style="padding:8px 10px;text-align:center;font-size:12px;width:32px">م</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  document.getElementById('archiveDetailContent').innerHTML=`
+    <div class="modal-title">🗂️ كامب ${camp.number} - ${camp.name}</div>
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="stat-card green"><div class="s-label">التجميع</div><div class="s-value">${tc.toLocaleString('ar-EG')}</div><div class="s-unit">ج</div></div>
+      <div class="stat-card blue"><div class="s-label">الحالات</div><div class="s-value">${campCases.length}</div></div>
+      <div class="stat-card red"><div class="s-label">المصاريف</div><div class="s-value">${te.toLocaleString('ar-EG')}</div><div class="s-unit">ج</div></div>
+      <div class="stat-card gold"><div class="s-label">٥٪</div><div class="s-value">${fp.toLocaleString('ar-EG')}</div><div class="s-unit">ج</div></div>
+    </div>
+    <div class="net-balance-card" style="margin-bottom:16px"><div><div class="nb-label">الصافي</div><div class="nb-value">${net.toLocaleString('ar-EG')} ج</div></div><div class="nb-icon">💰</div></div>
+    <div class="section-title" style="margin-bottom:8px">الحالات</div>
+    ${campCases.map(c=>`<div class="list-item" style="cursor:default"><div><div class="item-main">${c.code}</div><span class="team-pill ${teamPillClass(c.team)}">${c.team}</span></div><div class="item-amount">${(c.cost||0).toLocaleString('ar-EG')} ج</div></div>`).join('')}
+    ${campExp.length>0?`<div class="section-title" style="margin:12px 0 8px">المصاريف</div>${campExp.map(e=>`<div class="list-item" style="cursor:default"><div class="item-main">${e.name}</div><div class="item-amount">${(e.amount||0).toLocaleString('ar-EG')} ج</div></div>`).join('')}`:''}
+    ${ceilingsHTML}
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="info-box" style="margin-bottom:12px">⚠️ لو رجّعت الكامب ده للنشط، الكامب الحالي هيتأرشف.</div>
+      <button class="btn-save" onclick="reactivateCamp('${campId}')">🔄 إعادة تفعيل الكامب ده</button>
+    </div>`;
+  showModal('modalArchiveDetail');
+};
+
+window.deleteArchivedCamp = async (campId, campNum) => {
+  showConfirm(`مؤكد تحذف كامب ${campNum} من الأرشيف؟ البيانات هتتمسح نهائياً!`, async () => {
+    // Delete all subcollections first
+    const subs = ['cases','expenses','activity','ceilings'];
+    for (const sub of subs) {
+      const snap = await getDocs(collection(db,'camps',campId,sub));
+      for (const d of snap.docs) {
+        // If cases, delete their ceilings too
+        if (sub==='cases') {
+          const ceilSnap = await getDocs(collection(db,'camps',campId,'cases',d.id,'ceilings'));
+          for (const cd of ceilSnap.docs) await deleteDoc(doc(db,'camps',campId,'cases',d.id,'ceilings',cd.id));
+        }
+        await deleteDoc(doc(db,'camps',campId,sub,d.id));
+      }
+    }
+    await deleteDoc(doc(db,'camps',campId));
+    showToast('✓ تم حذف الكامب من الأرشيف');
+    loadArchive();
+  });
+};
+
+window.reactivateCamp = async (campId) => {
+  showConfirm('مؤكد إنك عاوز ترجع الكامب ده للنشط؟', async () => {
+    if (currentCamp) await updateDoc(doc(db,'camps',currentCamp.id),{status:'archived',archivedAt:Date.now(),totalCases:cases.reduce((s,c)=>s+(c.cost||0),0),casesCount:cases.length});
+    await updateDoc(doc(db,'camps',campId),{status:'active',archivedAt:null});
+    await logActivity('archive','تم إعادة تفعيل كامب من الأرشيف');
+    closeAllModals(); showToast('✓ تم إعادة تفعيل الكامب');
+    cases=[]; expenses=[]; currentCamp=null; await loadCurrentCamp();
+  });
+};
+
+// ACTIVITY LOG
+async function loadActivity() {
+  if (!currentCamp) return;
+  try {
+    const q=query(collection(db,'camps',currentCamp.id,'activity'),orderBy('createdAt','desc'));
+    onSnapshot(q, snap => {
+      const logs=snap.docs.map(d=>d.data());
+      const el=document.getElementById('activityList'); if(!el) return;
+      if (logs.length===0) { el.innerHTML=`<div class="empty-state"><div class="es-icon">📝</div><p>مفيش تعديلات بعد</p></div>`; return; }
+      el.innerHTML=logs.slice(0,50).map(l=>{
+        const dot=l.type==='add'?'add':l.type==='delete'?'delete':l.type==='archive'?'archive':'edit';
+        const time=l.createdAt?new Date(l.createdAt).toLocaleString('ar-EG'):'';
+        return `<div class="log-item"><div class="log-dot ${dot}"></div><div><div class="log-text">${l.text}</div><div class="log-time">🕐 ${time} · ${l.user||'مجهول'}</div></div></div>`;
+      }).join('');
+    },()=>{});
+  } catch(e){}
+}
+
+async function logActivity(type, text) {
+  if (!currentCamp) return;
+  try { await addDoc(collection(db,'camps',currentCamp.id,'activity'),{type,text,user:auth.currentUser?.email||'مجهول',createdAt:Date.now()}); } catch(e){}
+}
+
+// SAVE
+window.saveCase = async () => {
+  const code=document.getElementById('caseCode').value.trim(), cost=parseInt(document.getElementById('caseCost').value)||0;
+  const cashNum=document.getElementById('caseCash').value.trim(), note=document.getElementById('caseNote').value.trim();
+  if (!code) { showToast('اكتب كود الحالة!'); return; }
+  const editId=document.getElementById('caseEditId').value;
+  if (editId) {
+    await updateDoc(doc(db,'camps',currentCamp.id,'cases',editId),{code,cost,cashNum,note,team:selectedTeam});
+    await logActivity('edit',`تم تعديل الحالة ${code}`);
+    showToast('✓ تم تعديل الحالة');
+  } else {
+    await addDoc(collection(db,'camps',currentCamp.id,'cases'),{code,cost,cashNum,note,team:selectedTeam,createdAt:Date.now(),order:cases.length});
+    await logActivity('add',`تم إضافة الحالة ${code} - ${selectedTeam} - ${cost.toLocaleString('ar-EG')} ج`);
+    showToast('✓ تم حفظ الحالة');
+  }
+  closeAllModals();
+};
+
+window.deleteCase = async (id) => {
+  const c=cases.find(x=>x.id===id);
+  showConfirm(`مؤكد تحذف الحالة ${c?.code}؟`, async () => {
+    await deleteDoc(doc(db,'camps',currentCamp.id,'cases',id));
+    await logActivity('delete',`تم حذف الحالة ${c?.code}`);
+    showToast('✓ تم الحذف');
+  });
+};
+
+window.saveExpense = async () => {
+  const name=document.getElementById('expName').value.trim(), amount=parseInt(document.getElementById('expAmount').value)||0, note=document.getElementById('expNote').value.trim();
+  if (!name) { showToast('اكتب اسم المصروف!'); return; }
+  await addDoc(collection(db,'camps',currentCamp.id,'expenses'),{name,amount,note,createdAt:Date.now()});
+  await logActivity('add',`تم إضافة مصروف: ${name} - ${amount.toLocaleString('ar-EG')} ج`);
+  closeAllModals(); showToast('✓ تم حفظ المصروف');
+};
+
+window.deleteExpense = async (id) => {
+  showConfirm('مؤكد تحذف المصروف ده؟', async () => {
+    await deleteDoc(doc(db,'camps',currentCamp.id,'expenses',id));
+    await logActivity('delete','تم حذف مصروف');
+    showToast('✓ تم الحذف');
+  });
+};
+
+window.createNewCamp = async () => {
+  const num=parseInt(document.getElementById('newCampNum').value), name=document.getElementById('newCampName').value.trim();
+  if (!num||!name) { showToast('اكمل البيانات!'); return; }
+  if (currentCamp) await updateDoc(doc(db,'camps',currentCamp.id),{status:'archived',archivedAt:Date.now(),totalCases:cases.reduce((s,c)=>s+(c.cost||0),0),casesCount:cases.length});
+  await addDoc(collection(db,'camps'),{number:num,name,status:'active',createdAt:Date.now()});
+  closeAllModals(); showToast('🎉 تم إنشاء الكامب الجديد');
+  cases=[]; expenses=[]; currentCamp=null; await loadCurrentCamp();
+};
+
+window.openArchiveCamp = () => {
+  if (!currentCamp) return;
+  const tc=cases.reduce((s,c)=>s+(c.cost||0),0), te=expenses.reduce((s,e)=>s+(e.amount||0),0), fp=Math.round(tc*0.05);
+  document.getElementById('archiveCampSummary').innerHTML=`<div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px"><div class="stat-card green"><div class="s-label">التجميع</div><div class="s-value">${tc.toLocaleString('ar-EG')}</div><div class="s-unit">ج</div></div><div class="stat-card blue"><div class="s-label">الحالات</div><div class="s-value">${cases.length}</div></div><div class="stat-card red"><div class="s-label">المصاريف</div><div class="s-value">${te.toLocaleString('ar-EG')}</div><div class="s-unit">ج</div></div><div class="stat-card gold"><div class="s-label">٥٪</div><div class="s-value">${fp.toLocaleString('ar-EG')}</div><div class="s-unit">ج</div></div></div>`;
+  showModal('modalArchiveCamp');
+};
+
+window.archiveCurrentCamp = async () => {
+  const tc=cases.reduce((s,c)=>s+(c.cost||0),0);
+  await updateDoc(doc(db,'camps',currentCamp.id),{status:'archived',archivedAt:Date.now(),totalCases:tc,casesCount:cases.length});
+  await logActivity('archive',`تم أرشفة كامب ${currentCamp.number}`);
+  closeAllModals(); showToast('✓ تم أرشفة الكامب');
+  cases=[]; expenses=[]; currentCamp=null; await loadCurrentCamp();
+};
+
+window.printReport = () => {
+  if (!currentCamp) return;
+  const tc=cases.reduce((s,c)=>s+(c.cost||0),0), te=expenses.reduce((s,e)=>s+(e.amount||0),0), fp=Math.round(tc*0.05), net=tc-te-fp;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير كامب ${currentCamp.number}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body{font-family:Cairo,sans-serif;padding:30px;color:#0f1f17}h1{font-size:22px;font-weight:900;margin-bottom:4px}.sub{color:#6b7c72;font-size:13px;margin-bottom:20px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.card{border:1px solid #d4e6da;border-radius:10px;padding:12px}.card .l{font-size:11px;color:#6b7c72}.card .v{font-size:18px;font-weight:900}.net{background:#0f1f17;color:white;border-radius:12px;padding:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}.net .v{font-size:26px;font-weight:900;color:#4ade80}table{width:100%;border-collapse:collapse;margin-bottom:20px}th{background:#e8f5ee;padding:10px;font-size:12px;text-align:right}td{padding:9px 10px;border-bottom:1px solid #e8f5ee;font-size:13px}.footer{text-align:center;color:#6b7c72;font-size:11px;margin-top:30px;border-top:1px solid #d4e6da;padding-top:12px}@media print{button{display:none}}</style></head><body>
+  <button onclick="window.print()" style="background:#1a6b45;color:white;border:none;padding:10px 24px;border-radius:8px;font-family:Cairo;font-size:14px;cursor:pointer;margin-bottom:20px">🖨️ طباعة</button>
+  <h1>عون دشنا - تقرير كامب ${currentCamp.number}</h1><div class="sub">${currentCamp.name} · ${new Date().toLocaleDateString('ar-EG')}</div>
+  <div class="grid"><div class="card"><div class="l">إجمالي التجميع</div><div class="v" style="color:#1a6b45">${tc.toLocaleString('ar-EG')} ج</div></div><div class="card"><div class="l">عدد الحالات</div><div class="v" style="color:#1976d2">${cases.length}</div></div><div class="card"><div class="l">المصاريف</div><div class="v" style="color:#e53935">${te.toLocaleString('ar-EG')} ج</div></div><div class="card"><div class="l">نسبة ٥٪</div><div class="v" style="color:#c9973a">${fp.toLocaleString('ar-EG')} ج</div></div></div>
+  <div class="net"><div><div style="font-size:12px;opacity:0.7">الصافي</div><div class="v">${net.toLocaleString('ar-EG')} ج</div></div><div style="font-size:36px;opacity:0.3">💰</div></div>
+  <h3 style="margin-bottom:10px">الحالات (${cases.length})</h3>
+  <table><tr><th>الكود</th><th>التيم</th><th>رقم فودافون كاش</th><th>التكلفة</th><th>ملاحظة</th></tr>${cases.map(c=>`<tr><td>${c.code}</td><td>${c.team}</td><td dir="ltr">${c.cashNum||'-'}</td><td>${(c.cost||0).toLocaleString('ar-EG')} ج</td><td>${c.note||'-'}</td></tr>`).join('')}</table>
+  ${expenses.length>0?`<h3 style="margin-bottom:10px">المصاريف</h3><table><tr><th>البند</th><th>المبلغ</th><th>ملاحظة</th></tr>${expenses.map(e=>`<tr><td>${e.name}</td><td>${(e.amount||0).toLocaleString('ar-EG')} ج</td><td>${e.note||'-'}</td></tr>`).join('')}</table>`:''}
+  <div class="footer">Developed with ❤️ by Belal Fahem · عون دشنا v2.0</div></body></html>`);
+  win.document.close();
+};
+
+// CEILINGS PAGE
+window.renderCeilings = async () => {
+  const el = document.getElementById('ceilingsContent');
+  if (!el || !currentCamp) return;
+  el.innerHTML = `<div class="empty-state"><div class="es-icon">⏳</div><p>جاري التحميل...</p></div>`;
+
+  // Load all cases with their ceilings
+  const allCeilingsData = [];
+  for (const c of cases) {
+    const snap = await getDocs(collection(db,'camps',currentCamp.id,'cases',c.id,'ceilings'));
+    const ceilings = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if (ceilings.length > 0) allCeilingsData.push({caseId:c.id, code:c.code, cashNum:c.cashNum||'', ceilings});
+  }
+
+  if (allCeilingsData.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">🏗️</div><p>مفيش أسقف مسجلة لحد دلوقتي<br><span style="font-size:12px;color:#aaa">افتح أي حالة وأضف أسقف من تبويب الأسقف</span></p></div>`;
+    return;
+  }
+
+  let totalCeilings = allCeilingsData.reduce((s,c) => s + c.ceilings.length, 0);
+
+  let tableRows = '';
+  let rowNum = 1;
+  allCeilingsData.forEach(caseData => {
+    // Case header row - full width with green background
+    tableRows += `<tr class="case-header-row">
+      <td colspan="5" style="padding:10px 14px">
+        <span style="font-size:14px;font-weight:900;color:var(--green)">📋 ${caseData.code}</span>
+        ${caseData.cashNum ? `<span style="margin-right:14px;font-weight:600;color:var(--gray);font-size:12px;direction:ltr;display:inline-block">📱 ${caseData.cashNum}</span>` : ''}
+      </td>
+    </tr>`;
+    // Ceiling rows
+    caseData.ceilings.forEach((ceil, i) => {
+      rowNum++;
+      tableRows += `<tr class="ceil-data-row">
+        <td style="white-space:nowrap">
+          <button class="btn-edit" onclick="openEditCeiling('${caseData.caseId}','${ceil.id}','${(ceil.size||'').replace(/'/g,"\\'")}','${(ceil.beams||'').replace(/'/g,"\\'")}','${(ceil.paper||'').replace(/'/g,"\\'")}','${(ceil.note||'').replace(/'/g,"\\'")}')">تعديل</button>
+          <button class="btn-delete" onclick="deleteCeilingFromPage('${caseData.caseId}','${ceil.id}')">حذف</button>
+        </td>
+        <td class="ceil-size">${ceil.size ? toAr(ceil.size) : '<span class="ceil-empty">-</span>'}</td>
+        <td class="ceil-beams">${ceil.beams ? toAr(ceil.beams) : '<span class="ceil-empty">-</span>'}</td>
+        <td class="ceil-paper">${ceil.paper ? toAr(ceil.paper) : '<span class="ceil-empty">-</span>'}</td>
+        <td class="ceil-note">${ceil.note ? `⚠️ ${ceil.note}` : '<span class="ceil-empty">-</span>'}</td>
+      </tr>`;
+    });
+  });
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:10px">
+        <div class="stat-card blue" style="padding:10px 16px;margin:0"><div class="s-label">الحالات</div><div class="s-value" style="font-size:18px">${allCeilingsData.length}</div></div>
+        <div class="stat-card green" style="padding:10px 16px;margin:0"><div class="s-label">إجمالي الأسقف</div><div class="s-value" style="font-size:18px">${totalCeilings}</div></div>
+      </div>
+    </div>
+    <div class="ceil-table-wrap">
+      <table class="ceil-table">
+        <thead>
+          <tr>
+            <th style="width:110px"></th>
+            <th>م - المقاسات</th>
+            <th>العروق</th>
+            <th>الورق</th>
+            <th>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>`;
+};
+
+window.openEditCeiling = (caseId, ceilId, size, beams, paper, note) => {
+  const existing = document.getElementById('tempEditCeilModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'tempEditCeilModal';
+  modal.innerHTML = `<div class="modal">
+    <div class="modal-title">✏️ تعديل السقف</div>
+    <div class="two-col">
+      <div class="input-group"><label>المقاسات</label><input type="text" id="ec_size" value="${size}" dir="ltr"></div>
+      <div class="input-group"><label>العروق</label><input type="text" id="ec_beams" value="${beams}" dir="ltr"></div>
+      <div class="input-group"><label>الورق</label><input type="text" id="ec_paper" value="${paper}" dir="ltr"></div>
+      <div class="input-group"><label>ملاحظات</label><input type="text" id="ec_note" value="${note}"></div>
+    </div>
+    <button class="btn-save" onclick="saveEditCeiling('${caseId}','${ceilId}')">حفظ التعديل ✓</button>
+    <button class="btn-cancel" onclick="document.getElementById('tempEditCeilModal').remove()">إلغاء</button>
+  </div>`;
+  document.body.appendChild(modal);
+};
+
+window.saveEditCeiling = async (caseId, ceilId) => {
+  const data = {
+    size: document.getElementById('ec_size').value.trim(),
+    beams: document.getElementById('ec_beams').value.trim(),
+    paper: document.getElementById('ec_paper').value.trim(),
+    note: document.getElementById('ec_note').value.trim(),
+  };
+  await updateDoc(doc(db,'camps',currentCamp.id,'cases',caseId,'ceilings',ceilId), data);
+  await logActivity('edit','تم تعديل سقف');
+  document.getElementById('tempEditCeilModal').remove();
+  showToast('✓ تم تعديل السقف');
+  // Refresh wherever we are
+  const ceilPage = document.getElementById('pageCeilings');
+  if (ceilPage && ceilPage.classList.contains('active')) renderCeilings();
+  if (currentCaseDetail && currentCaseDetail.id === caseId) renderCaseDetailCeilings();
+};
+
+window.deleteCeilingFromPage = async (caseId, ceilId) => {
+  showConfirm('مؤكد تحذف السقف ده؟', async () => {
+    await deleteDoc(doc(db,'camps',currentCamp.id,'cases',caseId,'ceilings',ceilId));
+    await logActivity('delete','تم حذف سقف');
+    showToast('✓ تم الحذف');
+    renderCeilings();
+  });
+};
+
+window.printCeilings = async () => {
+  if (!currentCamp) return;
+
+  const allCeilingsData = [];
+  for (const c of cases) {
+    const snap = await getDocs(collection(db,'camps',currentCamp.id,'cases',c.id,'ceilings'));
+    const ceilings = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if (ceilings.length > 0) allCeilingsData.push({code:c.code, cashNum:c.cashNum||'', ceilings});
+  }
+
+  let rowNum = 1;
+  let tableRows = '';
+  allCeilingsData.forEach(caseData => {
+    tableRows += `<tr class="case-header">
+      <td colspan="5" style="text-align:right">📋 ${caseData.code}${caseData.cashNum ? ` &nbsp;|&nbsp; 📱 <span dir="ltr">${caseData.cashNum}</span>` : ''}</td>
+    </tr>`;
+    caseData.ceilings.forEach(ceil => {
+      tableRows += `<tr>
+        <td class="num">${rowNum++}</td>
+        <td class="mono">${toAr(ceil.size||'-')}</td>
+        <td class="mono">${toAr(ceil.beams||'-')}</td>
+        <td class="mono">${toAr(ceil.paper||'-')}</td>
+        <td>${ceil.note||'-'}</td>
+      </tr>`;
+    });
+  });
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+  <title>أسقف كامب ${currentCamp.number}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:Cairo,sans-serif;padding:24px;color:#0f1f17;font-size:13px}
+    .print-btn{background:#1a6b45;color:white;border:none;padding:9px 22px;border-radius:8px;font-family:Cairo;font-size:13px;cursor:pointer;margin-bottom:18px}
+    h1{font-size:19px;font-weight:900;margin-bottom:2px}
+    .sub{color:#6b7c72;font-size:12px;margin-bottom:16px}
+    .badges{display:flex;gap:10px;margin-bottom:16px}
+    .badge{background:#e8f5ee;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:#1a6b45}
+    table{width:100%;border-collapse:collapse}
+    th{background:#e8f5ee;padding:9px 10px;text-align:right;font-size:12px;font-weight:700;border-bottom:2px solid #d4e6da}
+    td{padding:8px 10px;border-bottom:1px solid #f0f4f2;vertical-align:middle}
+    tr.case-header td{background:#f4f8f5;font-weight:900;font-size:13px;color:#1a6b45;border-top:2px solid #d4e6da;padding:9px 10px}
+    .num{color:#888;font-size:12px;text-align:center;width:36px;font-weight:700}
+    .mono{text-align:right;font-size:12px;direction:rtl}
+    .footer{text-align:center;color:#999;font-size:11px;margin-top:24px;border-top:1px solid #d4e6da;padding-top:12px}
+    @media print{.print-btn{display:none}th{background:#e8f5ee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}tr.case-header td{background:#f4f8f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
+  <h1>🏗️ أسقف قافلة عون دشنا</h1>
+  <div class="sub">كامب ${currentCamp.number} - ${currentCamp.name} &nbsp;·&nbsp; ${new Date().toLocaleDateString('ar-EG')}</div>
+  <div class="badges">
+    <div class="badge">📋 ${allCeilingsData.length} حالة</div>
+    <div class="badge">🏗️ ${rowNum-1} سقف إجمالي</div>
+  </div>
+  <table>
+    <thead><tr><th style="width:36px;text-align:center">م</th><th>المقاسات</th><th>العروق</th><th>الورق</th><th>ملاحظات</th></tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+  <div class="footer">Developed with ❤️ by Belal Fahem · عون دشنا v2.0</div>
+  </body></html>`);
+  win.document.close();
+};
+
+// UI
+const pageInfo={pageHome:{title:'الرئيسية',action:null},pageCases:{title:'الحالات',action:`<button class="btn-add" onclick="openAddCase()">➕ إضافة حالة</button>`},pageExpenses:{title:'المصاريف',action:`<button class="btn-add" onclick="openAddExpense()">➕ إضافة مصروف</button>`},pageReports:{title:'التقارير',action:`<button class="btn-add" style="background:var(--blue)" onclick="printReport()">🖨️ طباعة PDF</button>`},pageArchive:{title:'الأرشيف',action:`<button class="btn-add" onclick="openNewCamp()">🏕️ كامب جديد</button>`},pageActivity:{title:'سجل التعديلات',action:null},pageUsers:{title:'المستخدمين',action:null},pageCeilings:{title:'الأسقف',action:`<button class="btn-add btn-print-ceil" style="background:var(--blue)" onclick="printCeilings()">🖨️ طباعة الأسقف</button>`}};
+const navIds={pageHome:'nav-home',pageCases:'nav-cases',pageExpenses:'nav-expenses',pageReports:'nav-reports',pageArchive:'nav-archive',pageActivity:'nav-activity',pageUsers:'nav-users',pageCeilings:'nav-ceilings'};
+
+window.showPage = (pageId) => {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+  document.getElementById(pageId)?.classList.add('active');
+  document.getElementById(navIds[pageId])?.classList.add('active');
+  const info=pageInfo[pageId]||{title:'',action:null};
+  document.getElementById('pageTopbarTitle').innerHTML=`<div class="topbar-title">${info.title}</div>`;
+  document.getElementById('pageTopbarActions').innerHTML=info.action||'';
+  if (pageId==='pageReports') renderReports();
+  if (pageId==='pageArchive') loadArchive();
+  if (pageId==='pageCeilings') renderCeilings();
+  closeMobileSidebar();
+};
+
+window.toggleMobileSidebar = () => {
+  document.getElementById('sidebarEl').classList.toggle('show');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+};
+window.closeMobileSidebar = () => {
+  document.getElementById('sidebarEl').classList.remove('show');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+};
+
+window.openAddCase = () => {
+  document.getElementById('caseEditId').value='';
+  document.getElementById('modalCaseTitle').textContent='➕ إضافة حالة جديدة';
+  ['caseCode','caseCash','caseNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('caseCost').value='';
+  selectedTeam='زاد';
+  document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('team-زاد').classList.add('active');
+  showModal('modalCase');
+};
+
+window.openEditCase = (id) => {
+  const c=cases.find(x=>x.id===id); if(!c) return;
+  document.getElementById('caseEditId').value=id;
+  document.getElementById('modalCaseTitle').textContent='✏️ تعديل الحالة';
+  document.getElementById('caseCode').value=c.code||'';
+  document.getElementById('caseCost').value=c.cost||0;
+  document.getElementById('caseCash').value=c.cashNum||'';
+  document.getElementById('caseNote').value=c.note||'';
+  selectedTeam=c.team||'زاد';
+  document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`team-${c.team}`)?.classList.add('active');
+  showModal('modalCase');
+};
+
+window.selectTeam = (team) => {
+  selectedTeam=team;
+  document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`team-${team}`)?.classList.add('active');
+};
+
+window.openAddExpense = () => { ['expName','expNote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('expAmount').value=''; showModal('modalExpense'); };
+window.openNewCamp = () => { document.getElementById('newCampNum').value=currentCamp?currentCamp.number+1:''; document.getElementById('newCampName').value=''; showModal('modalNewCamp'); };
+
+function showModal(id) {
+  document.getElementById('modalOverlay').style.display='flex';
+  document.querySelectorAll('#modalOverlay .modal').forEach(m=>m.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+window.closeAllModals = () => { document.getElementById('modalOverlay').style.display='none'; };
+window.closeModal = (e) => { if(e.target===document.getElementById('modalOverlay')) closeAllModals(); };
+window.showConfirm = (msg, cb) => { confirmCallback=cb; document.getElementById('confirmMsg').textContent=msg; showModal('modalConfirm'); };
+window.doConfirm = async () => { if(confirmCallback) await confirmCallback(); closeAllModals(); confirmCallback=null; };
+window.showToast = (msg) => { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); };
+window.copyText = (text) => { navigator.clipboard.writeText(text).then(()=>showToast('✓ تم النسخ')); };
+window.addEventListener('online',()=>{ document.getElementById('offlineBanner').style.display='none'; });
+window.addEventListener('offline',()=>{ document.getElementById('offlineBanner').style.display='block'; });
+if (!navigator.onLine) document.getElementById('offlineBanner').style.display='block';
+</script>
+</body>
+</html>
